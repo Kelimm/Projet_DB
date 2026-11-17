@@ -1,0 +1,29 @@
+:
+ETAPE : id_etape, nom_etape, description_etape, attendu
+LIEN_PASSAGEETAPE_ETAPE, 11 PASSAGE_ETAPE, 0N ETAPE
+:
+:
+
+PLAN : id_plan, nom_plan 
+LIEN_TEST_ETAPE, 11 ETAPE, 1N TEST 
+PASSAGE_ETAPE : id_passage_etape, etat_etape, commentaire 
+LIEN_PASSAGETEST_PASSAGEETAPE, 0N PASSAGE_TEST, 11 PASSAGE_ETAPE
+:
+
+LIEN_PLANTEST_TEST, 11 TEST, 1N PLAN
+TEST : id_test, nom_test, description_test, condition initial 
+LIEN_TEST_PASSAGETEST, 0N TEST, 11 PASSAGE_TEST
+PASSAGE_TEST: id_passage_test, date_passage_test, etat_test
+LIEN_PASSAGETEST_JEUTEST, 11 PASSAGE_TEST, 1N JEU_TEST
+
+EXIGENCE : id_exigence, nom_exigence, description_exigence
+LIENNMNONPORTEUR_TEST_EXIGENCE, 1N TEST, 0N EXIGENCE
+TESTEUR : id_testeur, nom_testeur
+LIEN_TESTEUR_PASSAGETEST, 0N TESTEUR, 11 PASSAGE_TEST
+JEU_TEST : id_jeu_test, type_jeu_test
+
+:
+:
+:
+CAMPAGNE : id_campagne, nom_campagne, version_logiciel, dateDebut,dateFin
+LIEN_JEU_CAMPAGNE, 11 JEU_TEST, 1N CAMPAGNE
