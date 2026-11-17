@@ -13,8 +13,6 @@ On fait donc une première analyse du texte pour :
 
 ## Dictionnaire de données
 
-Les noms des attributs sont harmonisés avec le MEA.
-
 ### 1. Jaune clair : Plan de test
 1. id_plan
 2. nom_plan
@@ -36,8 +34,6 @@ Les noms des attributs sont harmonisés avec le MEA.
 12. id_exigence
 13. nom_exigence
 14. description_exigence
-
-> L'**état d'une exigence** n'est pas stocké : c'est une donnée calculée à partir du dernier résultat des tests associés.
 
 ### 5. Rose : Étape
 15. id_etape
@@ -63,58 +59,9 @@ Les noms des attributs sont harmonisés avec le MEA.
 27. etat_etape
 28. commentaire## Dictionnaire de données
 
-Avec ces informations, on peut définir un dictionnaire de données en plusieurs parties, chacune correspondant à une couleur de l'image.
-
-### 1. Jaune clair : Plan de test
-1. id_plan
-2. nom_plan
-
-### 2. Bleu : Test
-3. id_test
-4. nom_test
-5. description_test
-6. condition_init
-
-### 3. Vert : Campagne
-7. id_campagne
-8. nom_campagne
-9. version_logiciel
-10. date_deb
-11. date_fin
-
-### 4. Rouge clair : Exigence
-12. id_exigence
-13. nom_exigence
-14. description_exigence
-(29 etat_exigence)
-
-### 5. Rose : Étape
-15. id_etape
-16. nom_etape
-17. description_etape
-18. attendu
-
-### 6. Jaune foncé : Testeur
-19. id_testeur
-20. nom_testeur
-
-### 7. Gris : Jeu de données
-21. id_jeu
-22. type_jeu
-
-### 8. Violet : Passage de test
-23. id_passage_test
-24. date_passage
-25. etat_passage
-
-### 9. Rouge foncé : Passage d'étape
-26. id_passage_etape
-27. etat_etape
-28. commentaire
-
 ## Matrice des dépendances fonctionnelles
 
-Une fois le dictionnaire créé, on remarque que les attributs se regroupent en plusieurs catégories. Dans chaque groupe, on choisit l'**attribut le plus approprié**, c'est-à-dire l'identifiant, et on l'utilise comme **colonne de la matrice des dépendances fonctionnelles**.
+Une fois le dictionnaire créé, on remarque que les attributs se regroupent en plusieurs catégories. Dans chaque groupe, on choisit l'attribut le plus approprié, c'est-à-dire l'** identifiant ** car unique , et on l'utilise comme **colonne de la matrice des dépendances fonctionnelles**.
 
 Les colonnes retenues sont :
 - id_plan
@@ -135,7 +82,7 @@ On obtient ainsi la matrice des dépendances fonctionnelles suivante :
 - les DF **réflexives** (A → A),
 - les DF **transitives** (A → C si A → B et B → C).
 
-### DF conservées (couverture minimale)
+### DF conservées 
 
 | Source | DF conservées |
 |---|---|
@@ -151,21 +98,20 @@ On obtient ainsi la matrice des dépendances fonctionnelles suivante :
 
 ### Pourquoi on supprime les autres
 
-- **3→2** : déjà couvert par 3→1 et 1→2.
-- **15→4, 5, 6** : déjà couvert par 15→3.
-- **21→8, 9, 10, 11** : déjà couvert par 21→7.
-- **23→4, 5, 6** : déjà couvert par 23→3.
-- **23→20** : déjà couvert par 23→19.
-- **23→22** : déjà couvert par 23→21.
-- **26→3, 4, 5, 6** : déjà couvert par 26→15 (et 15→3).
-- **26→16, 17, 18** : déjà couvert par 26→15.
-- **26→19, 20, 21, 24, 25** : déjà couvert par 26→23.
+- **3→2** : car 3→1 et 1→2.
+- **15→4, 5, 6** : car 15→3.
+- **21→8, 9, 10, 11** : car 21→7.
+- **23→4, 5, 6** : car 23→3.
+- **23→20** : car 23→19.
+- **23→22** : car 26→15 (et 15→3).
+- **26→16, 17, 18** : car 26→15.
+- **26→19, 20, 21, 24, 25** : car 26→23.
 
-Après cette suppression, on obtient une **matrice des DF simplifiée**, qui sert de base à la construction du modèle MEA.
+Après cette suppression, on obtient une **matrice des DF doublement simplifiée**, qui sert de base à la construction du modèle MEA.
 
 ![image](https://hackmd.io/_uploads/ryJfjrvCGl.png)
 
-## Construction du MCD avec Mokodo
+## Construction du MEA avec Mokodo
 
 À partir de la matrice des DF simplifiée, on construit le MCD dans Mokodo en appliquant les règles vues en cours.
 
@@ -174,23 +120,18 @@ Après cette suppression, on obtient une **matrice des DF simplifiée**, qui ser
 1. **Attribut source seul → entité**
    L'attribut source devient l'identifiant. Les attributs qu'il détermine deviennent ses propriétés.
 
-2. **Source qui détermine l'identifiant d'une autre entité → association**
+2. **Source elementaire -> Source elementaire**
    A → B avec B identifiant d'une autre entité : association entre les deux entités, max 1 côté A, max n côté B.
 
-3. **Plusieurs attributs sources → association avec propriété**
-   (A, B) → C : creation d'un lien n,m entre A et B
+3. **Source non elementaire → association n,m**
+   (A, B) → C : creation d'un lien N,M entre A et B
 
 4. **Aucun attribut ne détermine l'autre → association n,n**
-   Max n des deux côtés.
+   Max n des deux côtés, elel n'apparait pas dans la matrice il faut les trouvers en analysant le sujet.
 
 5. **Cardinalités**
    - max : vient des DF
    - min : vient des règles de gestion de l'énoncé (0 = facultatif, 1 = obligatoire)
-
-### Associations n,n
-
-Une associations n,n sont ajoutées, car aucune DF ne relie les entités concernées :
-- **TEST – EXIGENCE** : un test valide une ou plusieurs exigences, et une exigence peut être couverte par plusieurs tests.
 
 
 Ces deux associations n'ont pas de propriété.
@@ -204,46 +145,33 @@ Les min ne viennent pas des DF mais de l'énoncé :
 - **PASSAGE_TEST `1,1`** côté testeur : un passage est toujours réalisé par un testeur.
 - **PASSAGE_TEST `0,N`** côté passage d'étape : un test « en cours » n'a pas encore toutes ses étapes passées (Q 20).
 - **JEU_TEST `1,N`** côté test : un jeu rassemble au moins un test. Côté test, `0,N` : un test peut ne pas encore être dans un jeu.
-## Construction du MEA avec Mokodo
-
-À partir de la matrice des DF simplifiée, on construit le MEA dans Mokodo en appliquant les règles vues en cours.
-
-### Règles utilisées
-
-1. **Attribut source seul → entité**
-   L'attribut source devient l'identifiant. Les attributs qu'il détermine deviennent ses propriétés.
-
-2. **Source qui détermine l'identifiant d'une autre entité → association**
-   A → B avec B identifiant d'une autre entité : association entre les deux entités, max 1 côté A, max n côté B.
-
-3. **Plusieurs attributs sources → association avec propriété**
-   (A, B) → C : C est une propriété de l'association entre l'entité de A et l'entité de B.
-
-4. **Aucun attribut ne détermine l'autre → association n,n**
-   Max n des deux côtés.
-
-5. **Cardinalités**
-   - max : vient des DF
-   - min : vient des règles de gestion (0 = facultatif, 1 = obligatoire)
 
 On obtient donc le MEA suivant :
 ![MCD](https://hackmd.io/_uploads/Byv68CYAfx.svg)
 
-> **Note :** pour l'instant, on garde des **noms pour les associations** afin de mieux comprendre le modèle. L'association n,n entre TEST et EXIGENCE se nomme `LIEN_TEST_EXIGENCE`.
+> **Note :** pour l'instant, on garde des **noms pour les associations** afin de mieux comprendre le modèle. L'association n,n entre TEST et EXIGENCE se nomme `LIEN_TEST_EXIGENCE`, pareil pour les autres.
 
 ---
 
- ## PASSAGE MEA -> TABLES
+ ## Passage du modèle MEA vers les Tables en intention
  
- Nous passons du MEA aux tables en appliquant un certain nombre de règle : 
- 
- 1. Entitées : 
- - les entitées deviennent des tables
- 2. association : 
- - asociation N,M : Creation d'une table de lien entre les deux tables de la relation contenant la clé étrangère des deux tables 
- - association 1,N : La table ayant pour cardinalité maximum 1 reçois la clé primaire de l'asociation de cardinalité maximum N 
- - association 1,1 : Choix libre souvent la table avec le moin d'attribut reçois la clé primaire de la table avec le plus d'attribut  
- 
+Pour passer du MEA au modèle relationnel (les tables), on applique les règles suivantes.
+
+## 1. Les entités
+
+- Chaque entité devient une table.
+- Son identifiant devient la **clé primaire**, et ses attributs deviennent les colonnes.
+
+## 2. Les associations
+
+Le choix dépend des cardinalités maximales.
+
+- **Association N,M** : on crée une **table de liaison** entre les deux tables. Elle contient les clés étrangères des deux tables, et ces deux clés forment ensemble sa clé primaire.
+- **Association 1,N** : la table du côté de cardinalité maximale **1** reçoit, en **clé étrangère**, la clé primaire de la table du côté **N**.
+- **Association 1,1** : le choix est libre. En général, la table qui a le moins d'attributs reçoit, en clé étrangère, la clé primaire de celle qui en a le plus. La clé étrangère doit être déclarée `UNIQUE`, sinon on retombe sur un 1,N.
+
+
+**Nous obtenons donc les tables suivantes :**
  ```
 CAMPAGNE(*id_campagne, nom_campagne, version_logiciel, date_debut,date_fin)
 JEU_TEST(*id_jeu_test,type_jeu_test,#id_campagne)
