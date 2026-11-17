@@ -7,18 +7,18 @@ AS VARCHAR(14)
 CHECK (VALUE IN ('Non_regression', 'Functional'));
 
 CREATE TABLE Requirement (
- id_requirement INT PRIMARY KEY,
+ id_requirement SERIAL PRIMARY KEY,
  requirement_name VARCHAR(20),
  requirement_description VARCHAR(255)
  );
 
 CREATE TABLE Plan (
- id_plan INT PRIMARY KEY,
+ id_plan SERIAL PRIMARY KEY,
  plan_name VARCHAR(20)
 );
 
 CREATE TABLE Test (
- id_test INT PRIMARY KEY,
+ id_test SERIAL PRIMARY KEY,
  test_name VARCHAR(20),
  test_description VARCHAR(255),
  condition_init INT,
@@ -32,7 +32,7 @@ CREATE TABLE Requirement_test (
 );
 
 CREATE TABLE Stage (
- id_stage INT PRIMARY KEY,
+ id_stage SERIAL PRIMARY KEY,
  stage_name VARCHAR(20),
  stage_description VARCHAR(255),
  expectation INT, 
@@ -40,36 +40,36 @@ CREATE TABLE Stage (
 );
 
 CREATE TABLE Campaign (
- id_campaign INTEGER PRIMARY KEY,
+ id_campaign SERIAL PRIMARY KEY,
  campaign_name VARCHAR(20),
- software_version INTEGER,
+ software_version INT,
  start_at DATE,
  end_at DATE
 );
 
 CREATE TABLE Test_set (
- id_test_set INTEGER PRIMARY KEY,
+ id_test_set SERIAL PRIMARY KEY,
  type_test_set Test_set_type,
- id_campaign INTEGER REFERENCES Campaign(id_campaign)
+ id_campaign INT REFERENCES Campaign(id_campaign)
 );
 
 CREATE TABLE Tester (
- id_tester INTEGER PRIMARY KEY,
+ id_tester SERIAL PRIMARY KEY,
  tester_name VARCHAR(20)
 );
 
 
 CREATE TABLE Test_passage (
- id_test_passage INTEGER PRIMARY KEY,
+ id_test_passage SERIAL PRIMARY KEY,
  test_passage_at DATE,
  test_state Type_state DEFAULT 'WAITING',
- id_test_set INTEGER REFERENCES Test_set(id_test_set) ON DELETE CASCADE, -- Permet de repondre a la question Supprimer les resultats quand un jeu de test est supprimé
- id_tester INTEGER REFERENCES Tester(id_tester) ON DELETE SET NULL, -- Si un testeur quitte l'entreprise je garde l'historique de ses tests
+ id_test_set INT REFERENCES Test_set(id_test_set) ON DELETE CASCADE, -- Permet de repondre a la question Supprimer les resultats quand un jeu de test est supprimé
+ id_tester INT REFERENCES Tester(id_tester) ON DELETE SET NULL, -- Si un testeur quitte l'entreprise je garde l'historique de ses tests
  id_test INT REFERENCES Test(id_test) ON DELETE CASCADE -- Permet de repondre a la question Supprimer les resultats quand un jeu de test est supprimé
 );
 
 CREATE TABLE Stage_passage (
- id_stage_passage INT PRIMARY KEY,
+ id_stage_passage SERIAL PRIMARY KEY,
  state_stage Type_state,
  commentary VARCHAR(50),
  id_stage INT REFERENCES Stage(id_stage) ON DELETE CASCADE,
