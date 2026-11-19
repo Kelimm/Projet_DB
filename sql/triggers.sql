@@ -18,7 +18,7 @@ EXECUTE FUNCTION init_stage_passage();
 CREATE OR REPLACE FUNCTION update_test_passage_state()
 RETURNS TRIGGER AS $$
 	DECLARE
-		new_state TypeState;
+		new_state Typ_state;
 		nb_ko int;
 		nb_winting INT;
 	BEGIN
