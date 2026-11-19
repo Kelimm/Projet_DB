@@ -273,3 +273,99 @@ CREATE TABLE Stage_passage (
 );
 ```
 
+## Identification des triggers nécessaires
+
+Les tables étant créées, nous passons à la création des triggers. Pour déterminer lesquels sont nécessaires, nous relisons l'énoncé et repérons les termes comme « automatiquement » ou « en fonction de », qui indiquent qu'une donnée doit être mise à jour d'elle-même à la suite d'un ajout, d'une modification ou d'une suppression dans une autre table. Nous en retenons deux.
+
+![image](https://hackmd.io/_uploads/SJWDGChAMe.png)
+
+### Trigger 1 (vert) : initialisation des étapes d'un test passé
+
+
+**Raisonnement :** quand un test est rattaché à une campagne, rien n'a encore été exécuté, mais chaque étape devra recevoir un résultat. Il faut donc créer automatiquement une ligne de résultat par étape du test, avec l'état initial « En attente ». C'est ce qui permet à un test d'être « en cours » avant d'être terminé.
+
+**Événement déclencheur :**
+- **Ajout** d'un test dans une campagne (`INSERT` sur `PASSAGE_TEST`) : création des lignes `PASSAGE_ETAPE` en « En attente ».
+
+
+``` sql
+CREATE OR REPLACE FUNCTION init_stage_passage()
+RETURNS TRIGGER AS $$
+    BEGIN
+        INSERT INTO stage_passage (state_stage, id_stage, id_test_passage)
+        SELECT 'WAITING', s.id_stage, NEW.id_test_passage
+        FROM Stage as s
+        WHERE s.id_test = NEW.id_test;
+    RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE TRIGGER init_stage_passage
+    AFTER INSERT ON test_passage
+    FOR EACH ROW
+EXECUTE FUNCTION init_stage_passage();
+```
+### Trigger 2 (rouge) : calcul de l'état du test passé et de sa date de passage
+
+**Raisonnement :** l'état d'un test passé est une donnée dérivée de l'état de ses étapes, il ne doit pas être saisi à la main. Chaque fois qu'un résultat d'étape change, l'état du test passé doit être recalculé :
+- au moins une étape « Échoué » → **KO** ;
+- sinon, au moins une étape « En attente » → **WAINTING** ;
+- sinon (toutes « Passé ») → **OK**.
+
+La date de passage est mise à jour dans le même trigger.
+
+**Événement déclencheur** (sur `PASSAGE_ETAPE`, avec mise à jour de `PASSAGE_TEST`) :
+- **Modification** du résultat (par exemple « En attente » → « Passé ») : recalcul de l'état et de la date.
+
+``` SQL
+CREATE OR REPLACE FUNCTION update_test_passage_state()
+RETURNS TRIGGER AS $$
+	DECLARE
+		new_state Type_state;
+		nb_ko int;
+		nb_waiting INT;
+	BEGIN
+		/*compter les étapes raté de ce test passé*/
+		SELECT COUNT(*) INTO nb_ko
+    		FROM stage_passage
+    		WHERE id_test_passage = NEW.id_test_passage
+      		AND state_stage = 'KO';
+
+    		/*compter les étapes en attente de ce test passé*/
+       	  	SELECT COUNT(*) INTO nb_waiting
+    		FROM stage_passage
+    		WHERE id_test_passage = NEW.id_test_passage
+      		AND state_stage = 'WAITING';
+
+    		/* deduction du resultat du test*/
+    		IF nb_ko > 0 THEN
+        	      new_state := 'KO';
+    		ELSIF nb_waiting > 0 THEN
+        	      new_state := 'WAITING';
+    		ELSE
+		      new_state := 'OK';
+    		END IF;
+		
+		/*mise à jour du test passé*/
+    		IF new_state = 'WAITING' THEN
+        	      UPDATE test_passage
+        	      SET test_state = new_state,
+            	      test_passage_at = NULL
+        	      WHERE id_test_passage = NEW.id_test_passage;
+    		ELSE
+		      UPDATE test_passage
+        	      SET test_state = new_state,
+            	      test_passage_at = CURRENT_DATE
+        	      WHERE id_test_passage = NEW.id_test_passage;
+    		END IF;
+		RETURN NEW;
+
+	END;
+	$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_test_passage_state
+    AFTER UPDATE OF state_stage ON stage_passage
+    FOR EACH ROW
+EXECUTE FUNCTION update_test_passage_state();
+
+```
