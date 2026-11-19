@@ -18,9 +18,9 @@ EXECUTE FUNCTION init_stage_passage();
 CREATE OR REPLACE FUNCTION update_test_passage_state()
 RETURNS TRIGGER AS $$
 	DECLARE
-		new_state Typ_state;
+		new_state Type_state;
 		nb_ko int;
-		nb_winting INT;
+		nb_waiting INT;
 	BEGIN
 		/*compter les étapes en attente de ce test passé*/
 		SELECT COUNT(*) INTO nb_ko
@@ -55,7 +55,7 @@ RETURNS TRIGGER AS $$
             	      test_passage_at = CURRENT_DATE
         	      WHERE id_test_passage = NEW.id_test_passage;
     		END IF;
-		RETURN NEW
+		RETURN NEW;
 
 	END;
 	$$ LANGUAGE plpgsql;
