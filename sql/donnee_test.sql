@@ -105,6 +105,7 @@ INSERT INTO Test_passage (test_passage_at, test_state, id_test_set, id_tester, i
 ('2026-11-13', 'KO',      6, 2, 3),
 ('2026-11-15', 'WAITING', 5, 4, 6);
 
+/*
 -- 10. Passages des étapes (Stage_passage) - VARCHAR(50)
 INSERT INTO Stage_passage (state_stage, commentary, id_stage, id_test_passage) VALUES
 ('OK', 'Connexion fluide en moins de 1s', 1, 1),
@@ -129,5 +130,5 @@ INSERT INTO Stage_passage (state_stage, commentary, id_stage, id_test_passage) V
 ('OK', 'Ajout initial OK', 5, 11),
 ('KO', 'Quantité bloquée à 1 après rafraîchissement', 6, 11),
 ('WAITING', 'En attente de déploiement correctif', 11, 12);
-
+*/
 COMMIT;
