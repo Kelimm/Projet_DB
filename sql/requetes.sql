@@ -18,8 +18,8 @@ AS $$
 --question3
 
 SELECT rt.id_requirement,r.requirement_name,count(id_test) as nb_test
-FROM Requirement as r  LEFT JOIN Requirement_test as rt 
-ON r.id_requirement = rt.id_requirement
+FROM Requirement as r  
+LEFT JOIN Requirement_test as rt ON r.id_requirement = rt.id_requirement
 GROUP BY r.id_requirement
 ORDER BY r.id_requirement;
 
