@@ -22,7 +22,7 @@ RETURNS TRIGGER AS $$
 		nb_ko int;
 		nb_waiting INT;
 	BEGIN
-		/*compter les étapes en attente de ce test passé*/
+		/*compter les étapes ko de ce test passé*/
 		SELECT COUNT(*) INTO nb_ko
     		FROM stage_passage
     		WHERE id_test_passage = NEW.id_test_passage
