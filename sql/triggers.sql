@@ -69,3 +69,30 @@ CREATE TRIGGER update_test_passage_state
     AFTER INSERT OR UPDATE OF state_stage OR DELETE ON stage_passage 
     FOR EACH ROW
 EXECUTE FUNCTION update_test_passage_state();
+
+
+
+CREATE OR REPLACE FUNCTION check_stage_belongs_to_test()
+RETURNS TRIGGER AS $$
+DECLARE
+    stage_test_id   INT;
+    passage_test_id INT;
+BEGIN
+    -- Récupère l'id_test côté étape et côté passage de test
+    SELECT id_test INTO stage_test_id FROM Stage WHERE id_stage = NEW.id_stage;
+    SELECT id_test INTO passage_test_id FROM Test_passage WHERE id_test_passage = NEW.id_test_passage;
+
+    -- Bloque l'insertion/modification si l'étape n'appartient pas au test exécuté
+    IF stage_test_id IS DISTINCT FROM passage_test_id THEN
+        RAISE EXCEPTION 'L''étape % n''appartient pas au test du passage %',
+            NEW.id_stage, NEW.id_test_passage;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_stage_belongs_to_test
+    BEFORE INSERT OR UPDATE OF id_stage, id_test_passage ON stage_passage
+    FOR EACH ROW
+EXECUTE FUNCTION check_stage_belongs_to_test();
