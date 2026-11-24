@@ -1,3 +1,9 @@
+RADI KELIM
+	
+15:52 (il y a 1 heure)
+	
+	
+À moi
 from data_base import get_db_connection
 from flask import Flask, jsonify, request
 
@@ -224,7 +230,7 @@ def requirement_state():
 
  return jsonify(requirements_state), 200
 
-@app.route("/campaign/<id_c>/stages-failed", methods=['GET'])
+@app.route("/campaign/<int:id_c>/stages-failed", methods=['GET'])
 def campaign_failed_stages(id_c):
  """
  REQUETE QUESTION 6
@@ -265,8 +271,8 @@ def campaign_failed_stages(id_c):
 
  return jsonify(campaign_failed_stages), 200
 
-@app.route("/requirements/nb-test>=3", methods=['GET'])
-def campaign_failed_stages(id_c):
+@app.route("/requirements/nb-test-more-than-3", methods=['GET'])
+def requirement_with_3_plus_test():
  """
  REQUETE QUESTION 8
  """
@@ -284,14 +290,14 @@ def campaign_failed_stages(id_c):
  GROUP BY id_requirement
  HAVING count(id_test) >= 3
  );
- """, (id_c))
+ """)
  res = cur.fetchall()
- campaign_failed_stages = []
+ requirement_list = []
  for r in res:
- campaign_failed_stages.append({
- "id_stage_passage": r[0],
- "state_stage": r[1],
- "commentary": r[2]
+ requirement_list.append({
+ "id_requirement": r[0],
+ "requirement_name": r[1],
+ "requirement_description": r[2]
  })
 
  except DatabaseError as e :
@@ -301,41 +307,7 @@ def campaign_failed_stages(id_c):
  cur.close()
  conn.close()
 
- return jsonify(campaign_failed_stages), 200
- 
-
-@app.route("/requirements/<date1>/<date2>",methods=['GET'])
-def test_in_date(date1,date2):
-    """
-    REQUETE QUESTION 7
-    """
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    try:
-        cur.execute("""
-        SELECT *
-        FROM Test as t
-        WHERE t.id_test in (SELECT id_test
-                            FROM Test_passage
-		            WHERE test_passage_at BETWEEN %s AND %s);
-
-        """,date1,date2)
-        res = cur.fetchall()
-        test = []
-        for r in res:            test.append({
-                "id_test": r[0],
-                "test_name": r[1]
-            })
-        
-    except DatabaseError as e:
-        print(e)
-
-    finally:
-        cur.close()
-        conn.close()
-        return jsonify(test), 200
-    
+ return jsonify(requirement_list), 200
 
 if __name__=="__main__":
  app.run(debug=True)
