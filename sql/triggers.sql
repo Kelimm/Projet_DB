@@ -64,9 +64,8 @@ RETURNS TRIGGER AS $$
     		ELSE
 		      UPDATE test_passage
         	      SET test_state = new_state,
-            	      test_passage_at = TIMESTAMP
+            	      test_passage_at = CURRENT_TIMESTAMP
         	      WHERE id_test_passage = target_id 
-				  AND test_state IS DISTINCT FROM new_state;
 					
     		END IF;
 		RETURN COALESCE(NEW,OLD);
@@ -105,22 +104,6 @@ CREATE TRIGGER check_stage_belongs_to_test
     BEFORE INSERT OR UPDATE OF id_stage, id_test_passage ON stage_passage
     FOR EACH ROW
 EXECUTE FUNCTION check_stage_belongs_to_test();
-
-
-CREATE OR REPLACE FUNCTION init_test_passage_on_suite()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO test_passage (test_state, id_test, id_test_suite)
-    VALUES ('WAITING', NEW.id_test, NEW.id_test_suite);
-    --declenche le trigger pour les creations d'etapes 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER init_test_passage_on_suite
-    AFTER INSERT ON test_suite_test
-    FOR EACH ROW
-EXECUTE FUNCTION init_test_passage_on_suite();
 
 
 CREATE OR REPLACE FUNCTION delete_test_set_results()
