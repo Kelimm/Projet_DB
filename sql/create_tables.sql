@@ -8,7 +8,7 @@ CHECK (VALUE IN ('Non_regression', 'Functional'));
 
 CREATE TABLE Requirement (
  id_requirement SERIAL PRIMARY KEY,
- requirement_name VARCHAR(20),
+ requirement_name VARCHAR(50),
  requirement_description VARCHAR(255)
  );
 
@@ -19,9 +19,9 @@ CREATE TABLE Plan (
 
 CREATE TABLE Test (
  id_test SERIAL PRIMARY KEY,
- test_name VARCHAR(20),
+ test_name VARCHAR(50),
  test_description VARCHAR(255),
- condition_init INT,
+ initial_condition VARCHAR(20),
  id_plan INT REFERENCES Plan(id_plan) ON DELETE CASCADE
 );
 
@@ -33,15 +33,15 @@ CREATE TABLE Requirement_test (
 
 CREATE TABLE Stage (
  id_stage SERIAL PRIMARY KEY,
- stage_name VARCHAR(20),
+ stage_name VARCHAR(50),
  stage_description VARCHAR(255),
- expectation INT, 
+ expectation VARCHAR(255), 
  id_test INT REFERENCES Test(id_test) ON DELETE CASCADE
 );
 
 CREATE TABLE Campaign (
  id_campaign SERIAL PRIMARY KEY,
- campaign_name VARCHAR(20),
+ campaign_name VARCHAR(50),
  software_version INT,
  start_at DATE,
  end_at DATE
@@ -61,7 +61,7 @@ CREATE TABLE Tester (
 
 CREATE TABLE Test_passage (
  id_test_passage SERIAL PRIMARY KEY,
- test_passage_at DATE,
+ test_passage_at TIMESTAMP,
  test_state Type_state DEFAULT 'WAITING',
  id_test_set INT REFERENCES Test_set(id_test_set) ON DELETE CASCADE, -- Permet de repondre a la question Supprimer les resultats quand un jeu de test est supprimé
  id_tester INT REFERENCES Tester(id_tester) ON DELETE SET NULL, -- Si un testeur quitte l'entreprise je garde l'historique de ses tests
