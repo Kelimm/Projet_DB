@@ -359,6 +359,59 @@ def count_requirements_with_more_than_3_test():
 
     return jsonify({"Nombre d'exigences couverte par plus de 3 tests": nb_requirement}), 200
 
+@app.route("/campaign/<int:id_c>", methods=['GET'])
+def campaign_test_book(id_c):
+    """
+    REQUETE QUESTION 9 : Afficher le cahier de test associé à une campagne
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT c.id_campaign,
+                   c.campaign_name,
+                   ts.id_test_set,
+                   ts.type_test_set,
+                   t.id_test,
+                   t.test_name,
+                   t.test_description,
+                   t.initial_condition,
+                   tp.id_test_passage,
+                   tp.test_state,
+                   tp.test_passage_at,
+                   s.id_stage,
+                   s.stage_name,
+                   s.stage_description,
+                   s.expectation,
+                   sp.state_stage,
+                   sp.commentary
+            FROM Campaign AS c,
+                 Test_set AS ts,
+                 Test_passage AS tp,
+                 Test AS t,
+                 Stage AS s,
+                 Stage_passage AS sp
+            WHERE c.id_campaign = ts.id_campaign
+              AND ts.id_test_set = tp.id_test_set
+              AND tp.id_test = t.id_test
+              AND t.id_test = s.id_test
+              AND s.id_stage = sp.id_stage
+              AND sp.id_test_passage = tp.id_test_passage
+              AND c.id_campaign = %s
+            """, (id_c,))
+        
+        test_book = cur.fetchall()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"Cahier de test de la campagne": test_book}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True)
