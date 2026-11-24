@@ -4,7 +4,7 @@
 SELECT *
 FROM requirement;
 
---question 2 A DEMANDER AU PROG CAR AMBIGUITE
+--question 2 
 
 CREATE OR REPLACE FUNCTION get_requirement_by_test(id_test INT)
 RETURNS SETOF requirement
