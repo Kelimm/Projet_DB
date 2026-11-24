@@ -261,17 +261,12 @@ def campaign_failed_stages(id_c):
 
     try:
         cur.execute("""
-            SELECT id_stage_passage, state_stage, commentary
-            FROM stage_passage
-            WHERE id_test_passage IN (
-                SELECT id_test_passage 
-                FROM test_passage
-                WHERE id_test_set IN (
-                    SELECT id_test_set 
-                    FROM test_set ts
-                    JOIN campaign c ON ts.id_campaign = %s and ts.id_campaign=c.id_campaign
-                )
-            ) AND state_stage='KO';
+            SELECT sp.id_stage_passage, sp.state_stage, sp.commentary
+            FROM stage_passage sp
+            JOIN test_passage tp ON sp.id_test_passage = tp.id_test_passage
+            JOIN test_set ts ON tp.id_test_set = ts.id_test_set
+            WHERE ts.id_campaign = %s
+            AND sp.state_stage = 'KO';
             """, (id_c,))
         res = cur.fetchall()
 
@@ -283,14 +278,15 @@ def campaign_failed_stages(id_c):
                 "commentary": r[2]
             })
 
-        return jsonify(campaign_failed_stages), 200
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
+
+    return jsonify(campaign_failed_stages), 200
+
 
 
 @app.route("/tests/<date1>/<date2>", methods=['GET'])
@@ -331,33 +327,26 @@ def test_in_date(date1, date2):
 
 
 @app.route("/requirements/nb-test-more-than-3", methods=['GET'])
-def requirement_with_3_plus_test():
+def count_requirements_with_more_than_3_test():
     """
     REQUETE QUESTION 8
     """
     conn = get_db_connection()
     cur = conn.cursor()
-    res = None
 
     try:
         cur.execute("""
-            SELECT *
-            FROM requirement
-            WHERE id_requirement IN (
-                SELECT count(id_test)
+            SELECT count(*) as nbexigence
+            FROM (
+                SELECT id_requirement
                 FROM requirement_test
                 GROUP BY id_requirement
-                HAVING count(id_test) >= 3
+                HAVING count(id_test) > 3
             );
             """)
-        res = cur.fetchall()
-        requirement_list = []
-        for r in res:
-            requirement_list.append({
-                "id_requirement": r[0],
-                "requirement_name": r[1],
-                "requirement_description": r[2]
-            })
+        # Récupération de l'élément 0 car fetchone renvoie un tuple
+        nb_requirement = cur.fetchone()[0]
+
 
     except DatabaseError as e:
         return jsonify({"error", e}), 500
@@ -366,7 +355,7 @@ def requirement_with_3_plus_test():
         cur.close()
         conn.close()
 
-    return jsonify(requirement_list), 200
+    return jsonify({"Nombre d'exigences couverte par plus de 3 tests": nb_requirement}), 200
 
 
 if __name__ == "__main__":
