@@ -20,10 +20,19 @@ RETURNS TRIGGER AS $$
 	DECLARE
 		target_id INT;
 		new_state Type_state;
+		nb_total   INT;
 		nb_ko int;
 		nb_waiting INT;
 	BEGIN
 		target_id := COALESCE(NEW.id_test_passage, OLD.id_test_passage); --recupere l'ID du new ou old 
+
+		SELECT COUNT(*) INTO nb_total
+    	FROM stage_passage
+    	WHERE id_test_passage = target_id;
+
+    	IF nb_total = 0 THEN
+        	RETURN COALESCE(NEW, OLD);
+    	END IF;
 		/*compter les étapes ko de ce test passé*/
 		SELECT COUNT(*) INTO nb_ko
     		FROM stage_passage
@@ -37,10 +46,10 @@ RETURNS TRIGGER AS $$
       		AND state_stage = 'WAITING';
 
     		/* deduction du resultat du test*/
-    		IF nb_ko > 0 THEN
-        	      new_state := 'KO';
-    		ELSIF nb_waiting > 0 THEN
+			IF nb_waiting > 0 THEN
         	      new_state := 'WAITING';
+    		ELSIF nb_ko > 0 THEN
+        	      new_state := 'KO';
     		ELSE
 		      new_state := 'OK';
     		END IF;
@@ -96,3 +105,42 @@ CREATE TRIGGER check_stage_belongs_to_test
     BEFORE INSERT OR UPDATE OF id_stage, id_test_passage ON stage_passage
     FOR EACH ROW
 EXECUTE FUNCTION check_stage_belongs_to_test();
+
+
+CREATE OR REPLACE FUNCTION init_test_passage_on_suite()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO test_passage (test_state, id_test, id_test_suite)
+    VALUES ('WAITING', NEW.id_test, NEW.id_test_suite);
+    --declenche le trigger pour les creations d'etapes 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER init_test_passage_on_suite
+    AFTER INSERT ON test_suite_test
+    FOR EACH ROW
+EXECUTE FUNCTION init_test_passage_on_suite();
+
+
+CREATE OR REPLACE FUNCTION delete_test_suite_results()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Supprime d'abord les passages d'étapes liés aux passages de tests de ce jeu
+    DELETE FROM stage_passage
+    WHERE id_test_passage IN (
+        SELECT id_test_passage FROM test_passage WHERE id_test_suite = OLD.id_test_suite
+    );
+
+    -- Supprime ensuite les passages de tests liés à ce jeu
+    DELETE FROM test_passage
+    WHERE id_test_suite = OLD.id_test_suite;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER delete_test_suite_results
+    BEFORE DELETE ON test_suite
+    FOR EACH ROW
+EXECUTE FUNCTION delete_test_suite_results();
