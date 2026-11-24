@@ -50,3 +50,45 @@ FROM Test as t
 WHERE t.id_test in (SELECT id_test
       		    FROM Test_passage
 		    WHERE test_passage_at BETWEEN '2026-10-06' AND '2026-10-09');
+
+--question 9
+--réalisé our montrer que la sous requete aurai était possible seulement si on nous demandais les éléments d'une seule table dans le select 
+SELECT *
+FROM Test
+WHERE id_test IN (SELECT id_test
+      	      	  FROM Test_passage
+		  WHERE id_test_set IN (SELECT id_test_set
+		  		        FROM Test_set
+					WHERE id_campaign = $));
+
+
+SELECT c.id_campaign,
+       c.campaign_name,
+       ts.id_test_set,
+       ts.type_test_set,
+       t.id_test,
+       t.test_name,
+       t.test_description,
+       t.initial_condition,
+       tp.id_test_passage,
+       tp.test_state,
+       tp.test_passage_at,
+       s.id_stage,
+       s.stage_name,
+       s.stage_description,
+       s.expectation,
+       sp.state_stage,
+       sp.commentary
+FROM Campaign AS c,
+     Test_set AS ts,
+     Test_passage AS tp,
+     Test AS t,
+     Stage AS s,
+     Stage_passage AS sp
+WHERE c.id_campaign = ts.id_campaign
+  AND ts.id_test_set = tp.id_test_set
+  AND tp.id_test = t.id_test
+  AND t.id_test = s.id_test
+  AND s.id_stage = sp.id_stage
+  AND sp.id_test_passage = tp.id_test_passage
+  AND c.id_campaign = %s
