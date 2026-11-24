@@ -123,24 +123,24 @@ CREATE TRIGGER init_test_passage_on_suite
 EXECUTE FUNCTION init_test_passage_on_suite();
 
 
-CREATE OR REPLACE FUNCTION delete_test_suite_results()
+CREATE OR REPLACE FUNCTION delete_test_set_results()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Supprime d'abord les passages d'étapes liés aux passages de tests de ce jeu
     DELETE FROM stage_passage
     WHERE id_test_passage IN (
-        SELECT id_test_passage FROM test_passage WHERE id_test_suite = OLD.id_test_suite
+        SELECT id_test_passage FROM test_passage WHERE id_test_set = OLD.id_test_set
     );
 
     -- Supprime ensuite les passages de tests liés à ce jeu
     DELETE FROM test_passage
-    WHERE id_test_suite = OLD.id_test_suite;
+    WHERE id_test_set = OLD.id_test_set;
 
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER delete_test_suite_results
-    BEFORE DELETE ON test_suite
+CREATE TRIGGER delete_test_set_results
+    BEFORE DELETE ON test_set
     FOR EACH ROW
-EXECUTE FUNCTION delete_test_suite_results();
+EXECUTE FUNCTION delete_test_set_results();
