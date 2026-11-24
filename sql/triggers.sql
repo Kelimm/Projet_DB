@@ -64,7 +64,7 @@ RETURNS TRIGGER AS $$
     		ELSE
 		      UPDATE test_passage
         	      SET test_state = new_state,
-            	      test_passage_at = CURRENT_DATE
+            	      test_passage_at = TIMESTAMP
         	      WHERE id_test_passage = target_id 
 				  AND test_state IS DISTINCT FROM new_state;
 					
