@@ -70,23 +70,29 @@ def get_requirements():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT * FROM requirement;"
-    )
+    try:
+        cur.execute(
+            "SELECT * FROM requirement;"
+        )
 
-    res = cur.fetchall()
-    cur.close()
-    conn.close()
+        res = cur.fetchall()
 
-    requirements = []
+        requirements = []
 
-    for r in res:
-        requirements.append({
-            "id_requirement": r[0],
-            "requirement_name": r[1],
-            "requirement_description": r[2],
-        })
-    return jsonify(requirements), 200
+        for r in res:
+            requirements.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "requirement_description": r[2],
+            })
+
+    except DatabaseError as e:
+        print(e)
+
+    finally:
+        cur.close()
+        conn.close()
+        return jsonify(requirements), 200
 
 
 @app.route("/requirements/<id_r>", methods=['GET'])
@@ -129,27 +135,31 @@ def nb_test_requirement():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT r.id_requirement, r.requirement_name, count(id_test) as nb_test
-        FROM Requirement as r LEFT JOIN Requirement_test as rt 
-        ON r.id_requirement = rt.id_requirement
-        GROUP BY r.id_requirement
-        ORDER BY r.id_requirement;
-        """)
-    res = cur.fetchall()
+    try:
+        cur.execute("""
+            SELECT r.id_requirement, r.requirement_name, count(id_test) as nb_test
+            FROM Requirement as r LEFT JOIN Requirement_test as rt 
+            ON r.id_requirement = rt.id_requirement
+            GROUP BY r.id_requirement
+            ORDER BY r.id_requirement;
+            """)
+        res = cur.fetchall()
 
-    cur.close()
-    conn.close()
+        nb_test = []
+        for r in res:
+            nb_test.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "nb_test": r[2]
+            })
 
-    nb_test = []
-    for r in res:
-        nb_test.append({
-            "id_requirement": r[0],
-            "requirement_name": r[1],
-            "nb_test": r[2]
-        })
+    except DatabaseError as e:
+        print(e)
 
-    return jsonify(nb_test), 200
+    finally:
+        cur.close()
+        conn.close()
+        return jsonify(nb_test), 200
 
 
 @app.route("/requirements/passed-tests")
@@ -160,30 +170,34 @@ def requirements_passed_test():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT r.id_requirement, r.requirement_name, t.test_name, tp.test_passage_at, tp.test_state
-        FROM Requirement AS r, Test as t, Test_passage as tp, Requirement_test as rt
-        WHERE r.id_requirement = rt.id_requirement
-        AND rt.id_test = t.id_test
-        AND t.id_test = tp.id_test 
-        ORDER BY r.id_requirement, tp.test_passage_at;
-        """)
-    res = cur.fetchall()
+    try:
+        cur.execute("""
+            SELECT r.id_requirement, r.requirement_name, t.test_name, tp.test_passage_at, tp.test_state
+            FROM Requirement AS r, Test as t, Test_passage as tp, Requirement_test as rt
+            WHERE r.id_requirement = rt.id_requirement
+            AND rt.id_test = t.id_test
+            AND t.id_test = tp.id_test 
+            ORDER BY r.id_requirement, tp.test_passage_at;
+            """)
+        res = cur.fetchall()
 
-    cur.close()
-    conn.close()
+        requirements_list = []
+        for r in res:
+            requirements_list.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "test_name": r[2],
+                "test_passage_at": r[3],
+                "test_state": r[4]
+            })
 
-    requirements_list = []
-    for r in res:
-        requirements_list.append({
-            "id_requirement": r[0],
-            "requirement_name": r[1],
-            "test_name": r[2],
-            "test_passage_at": r[3],
-            "test_state": r[4]
-        })
+    except DatabaseError as e:
+        print(e)
 
-    return jsonify(requirements_list), 200
+    finally:
+        cur.close()
+        conn.close()
+        return jsonify(requirements_list), 200
 
 
 @app.route("/requirements/state")
@@ -194,40 +208,44 @@ def requirement_state():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        -- Utilisation du min(last_test_request.test_state), K est avant O dans l'alphabet 
-        -- donc si une seul etape est KO alors l'exigence est KO aussi
-        SELECT r.id_requirement, r.requirement_name, MIN(last_test_request.test_state) as requirement_state
-        FROM requirement r
-        JOIN requirement_test rt ON r.id_requirement = rt.id_requirement
-        JOIN test t ON t.id_test = rt.id_test
-        JOIN (
-            SELECT id_test, test_state
-            FROM test_passage
-            WHERE (id_test, test_passage_at) IN (
-                -- Recuperation du dernier etat du test
-                SELECT id_test, MAtest_passage_at) as max_date
+    try:
+        cur.execute("""
+            -- Utilisation du min(last_test_request.test_state), K est avant O dans l'alphabet 
+            -- donc si une seul etape est KO alors l'exigence est KO aussi
+            SELECT r.id_requirement, r.requirement_name, MIN(last_test_request.test_state) as requirement_state
+            FROM requirement r
+            JOIN requirement_test rt ON r.id_requirement = rt.id_requirement
+            JOIN test t ON t.id_test = rt.id_test
+            JOIN (
+                SELECT id_test, test_state
                 FROM test_passage
-                GROUP BY id_test
-            )
-        ) last_test_request ON last_test_request.id_test = t.id_test
-        GROUP BY r.id_requirement, r.requirement_name
-        ORDER BY r.id_requirement;
-        """)
-    res = cur.fetchall()
+                WHERE (id_test, test_passage_at) IN (
+                    -- Recuperation du dernier etat du test
+                    SELECT id_test, MAtest_passage_at) as max_date
+                    FROM test_passage
+                    GROUP BY id_test
+                )
+            ) last_test_request ON last_test_request.id_test = t.id_test
+            GROUP BY r.id_requirement, r.requirement_name
+            ORDER BY r.id_requirement;
+            """)
+        res = cur.fetchall()
 
-    cur.close()
-    conn.close()
+        requirements_state = []
+        for r in res:
+            requirements_state.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "requirement_state": r[2]
+            })
 
-    requirements_state = []
-    for r in res:
-        requirements_state.append({
-            "id_requirement": r[0],
-            "requirement_name": r[1],
-            "requirement_state": r[2]
-        })
+    except DatabaseError as e:
+        print(e)
 
-    return jsonify(requirements_state), 200
+    finally:
+        cur.close()
+        conn.close()
+        return jsonify(requirements_state), 200
 
 
 @app.route("/campaign/<int:id_c>/stages-failed", methods=['GET'])
@@ -237,7 +255,6 @@ def campaign_failed_stages(id_c):
     """
     conn = get_db_connection()
     cur = conn.cursor()
-    res = None
 
     try:
         cur.execute("""
@@ -263,46 +280,46 @@ def campaign_failed_stages(id_c):
             })
 
     except DatabaseError as e:
-        return jsonify({"error", e}), 500
+        print(e)
 
     finally:
         cur.close()
         conn.close()
+        return jsonify(campaign_failed_stages), 200
 
-    return jsonify(campaign_failed_stages), 200
 
-@app.route("/requirements/<date1>/<date2>",methods=['GET'])
-def test_in_date(date1,date2):
+@app.route("/requirements/<date1>/<date2>", methods=['GET'])
+def test_in_date(date1, date2):
     """
     REQUETE QUESTION 7
     """
     conn = get_db_connection()
     cur = conn.cursor()
-    test = []
 
     try:
         cur.execute("""
-        SELECT *
-        FROM Test as t
-        WHERE t.id_test in (SELECT id_test
-                            FROM Test_passage
-		            		WHERE test_passage_at BETWEEN %s AND %s);
+            SELECT *
+            FROM Test as t
+            WHERE t.id_test in (SELECT id_test
+                                FROM Test_passage
+                                WHERE test_passage_at BETWEEN %s AND %s);
 
-        """,(date1,date2))
+            """, (date1, date2))
         res = cur.fetchall()
+        test = []
         for r in res:
-                 test.append({
+            test.append({
                 "id_test": r[0],
                 "test_name": r[1]
             })
-        
+
     except DatabaseError as e:
         print(e)
 
     finally:
         cur.close()
         conn.close()
-    return jsonify(test), 200
+        return jsonify(test), 200
 
 
 @app.route("/requirements/nb-test-more-than-3", methods=['GET'])
@@ -312,7 +329,6 @@ def requirement_with_3_plus_test():
     """
     conn = get_db_connection()
     cur = conn.cursor()
-    res = None
 
     try:
         cur.execute("""
@@ -335,13 +351,12 @@ def requirement_with_3_plus_test():
             })
 
     except DatabaseError as e:
-        return jsonify({"error", e}), 500
+        print(e)
 
     finally:
         cur.close()
         conn.close()
-
-    return jsonify(requirement_list), 200
+        return jsonify(requirement_list), 200
 
 
 if __name__ == "__main__":
