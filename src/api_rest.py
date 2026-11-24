@@ -212,22 +212,24 @@ def requirement_state():
 
     try:
         cur.execute("""
-            -- Utilisation du min(last_test_request.test_state), K est avant O dans l'alphabet 
-            -- donc si une seul etape est KO alors l'exigence est KO aussi
-            SELECT r.id_requirement, r.requirement_name, MIN(last_test_request.test_state) as requirement_state
+            SELECT  r.id_requirement, 
+            r.requirement_name, 
+            CASE
+                WHEN BOOL_OR(tp.test_state = 'KO') THEN 'KO'
+                WHEN BOOL_OR(tp.test_state = 'WAITING') THEN 'WAITING'
+                ELSE 'OK'
+            END AS requirement_state
+            
             FROM requirement r
             JOIN requirement_test rt ON r.id_requirement = rt.id_requirement
             JOIN test t ON t.id_test = rt.id_test
-            JOIN (
-                SELECT id_test, test_state
+            JOIN test_passage tp ON tp.id_test = t.id_test
+            WHERE (tp.id_test, test_passage_at) IN (
+                -- Recuperation du dernier etat du test
+                SELECT id_test, MAX(test_passage_at) as max_date
                 FROM test_passage
-                WHERE (id_test, test_passage_at) IN (
-                    -- Recuperation du dernier etat du test
-                    SELECT id_test, MAX(test_passage_at) as max_date
-                    FROM test_passage
-                    GROUP BY id_test
+                GROUP BY id_test
                 )
-            ) last_test_request ON last_test_request.id_test = t.id_test
             GROUP BY r.id_requirement, r.requirement_name
             ORDER BY r.id_requirement;
             """)
