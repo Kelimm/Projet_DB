@@ -1,5 +1,6 @@
 from data_base import get_db_connection
 from flask import Flask, jsonify, request
+from psycopg2 import DatabaseError
 
 app = Flask(__name__)
 
@@ -41,11 +42,7 @@ def create_requirement():
         )
 
         new_row = cur.fetchone()
-
         conn.commit()
-
-        cur.close()
-        conn.close()
 
         new_req = {
             "id_requirement": new_row[0],
@@ -55,11 +52,13 @@ def create_requirement():
 
         return jsonify(new_req), 201  # Code HTTP "created"
 
-    except Exception as e:
+    except DatabaseError as e:
         conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
         cur.close()
         conn.close()
-        return jsonify({"error": e}), 500  # Code HTTP "Internal server error", il n'a pas reussi a post
 
 
 @app.route('/requirements', methods=['GET'])
@@ -78,7 +77,6 @@ def get_requirements():
         res = cur.fetchall()
 
         requirements = []
-
         for r in res:
             requirements.append({
                 "id_requirement": r[0],
@@ -86,16 +84,17 @@ def get_requirements():
                 "requirement_description": r[2],
             })
 
+        return jsonify(requirements), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(requirements), 200
 
 
-@app.route("/requirements/<id_r>", methods=['GET'])
+@app.route("/requirements/<int:id_r>", methods=['GET'])
 def test_for_requirement(id_r):
     """
     REQUETE QUESTION 2
@@ -109,7 +108,7 @@ def test_for_requirement(id_r):
             FROM Test as t, Requirement_test as rt
             WHERE t.id_test = rt.id_test
             AND rt.id_requirement = %s ;
-            """, id_r)
+            """, (id_r,))
         res = cur.fetchall()
         test = []
         for r in res:
@@ -118,13 +117,14 @@ def test_for_requirement(id_r):
                 "test_name": r[1]
             })
 
+        return jsonify(test), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(test), 200
 
 
 @app.route("/requirements/tests-count", methods=['GET'])
@@ -153,16 +153,17 @@ def nb_test_requirement():
                 "nb_test": r[2]
             })
 
+        return jsonify(nb_test), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(nb_test), 200
 
 
-@app.route("/requirements/passed-tests")
+@app.route("/requirements/passed-tests", methods=['GET'])
 def requirements_passed_test():
     """
     REQUETE QUESTION 4
@@ -191,16 +192,17 @@ def requirements_passed_test():
                 "test_state": r[4]
             })
 
+        return jsonify(requirements_list), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(requirements_list), 200
 
 
-@app.route("/requirements/state")
+@app.route("/requirements/state", methods=['GET'])
 def requirement_state():
     """
     REQUETE QUESTION 5
@@ -221,7 +223,7 @@ def requirement_state():
                 FROM test_passage
                 WHERE (id_test, test_passage_at) IN (
                     -- Recuperation du dernier etat du test
-                    SELECT id_test, MAtest_passage_at) as max_date
+                    SELECT id_test, MAX(test_passage_at) as max_date
                     FROM test_passage
                     GROUP BY id_test
                 )
@@ -239,13 +241,14 @@ def requirement_state():
                 "requirement_state": r[2]
             })
 
+        return jsonify(requirements_state), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(requirements_state), 200
 
 
 @app.route("/campaign/<int:id_c>/stages-failed", methods=['GET'])
@@ -269,8 +272,9 @@ def campaign_failed_stages(id_c):
                     JOIN campaign c ON ts.id_campaign = %s and ts.id_campaign=c.id_campaign
                 )
             ) AND state_stage='KO';
-            """, (id_c))
+            """, (id_c,))
         res = cur.fetchall()
+
         campaign_failed_stages = []
         for r in res:
             campaign_failed_stages.append({
@@ -279,16 +283,17 @@ def campaign_failed_stages(id_c):
                 "commentary": r[2]
             })
 
+        return jsonify(campaign_failed_stages), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(campaign_failed_stages), 200
 
 
-@app.route("/requirements/<date1>/<date2>", methods=['GET'])
+@app.route("/tests/<date1>/<date2>", methods=['GET'])
 def test_in_date(date1, date2):
     """
     REQUETE QUESTION 7
@@ -298,14 +303,16 @@ def test_in_date(date1, date2):
 
     try:
         cur.execute("""
-            SELECT *
+            SELECT id_test, test_name
             FROM Test as t
-            WHERE t.id_test in (SELECT id_test
-                                FROM Test_passage
-                                WHERE test_passage_at BETWEEN %s AND %s);
-
+            WHERE t.id_test IN (
+                SELECT id_test
+                FROM Test_passage
+                WHERE test_passage_at BETWEEN %s AND %s
+            );
             """, (date1, date2))
         res = cur.fetchall()
+
         test = []
         for r in res:
             test.append({
@@ -313,13 +320,14 @@ def test_in_date(date1, date2):
                 "test_name": r[1]
             })
 
+        return jsonify(test), 200
+
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(test), 200
 
 
 @app.route("/requirements/nb-test-more-than-3", methods=['GET'])
@@ -329,6 +337,7 @@ def requirement_with_3_plus_test():
     """
     conn = get_db_connection()
     cur = conn.cursor()
+    res = None
 
     try:
         cur.execute("""
@@ -351,12 +360,13 @@ def requirement_with_3_plus_test():
             })
 
     except DatabaseError as e:
-        print(e)
+        return jsonify({"error", e}), 500
 
     finally:
         cur.close()
         conn.close()
-        return jsonify(requirement_list), 200
+
+    return jsonify(requirement_list), 200
 
 
 if __name__ == "__main__":
