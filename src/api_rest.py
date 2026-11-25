@@ -4,6 +4,8 @@ from psycopg2 import DatabaseError
 
 app = Flask(__name__)
 
+# Permet d'afficher les données dans l'ordre que l'on souhaite
+app.json.sort_keys = False
 
 @app.route('/', methods=['GET'])
 def home():
@@ -484,6 +486,9 @@ def all_state_test(id_t):
 
 @app.route("/campaigns/<int:id_c>/count-tester", methods=['GET'])
 def campaigns_count_tester(id_c):
+    """
+    QUESTION 12
+    """
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -504,6 +509,42 @@ def campaigns_count_tester(id_c):
         conn.close()
 
     return jsonify({"count_tester":res}), 200
+
+@app.route("/campaigns/tester-tests-count", methods=['GET'])
+def testers_tests_count():
+    """
+    QUESTION 13
+    """
+ 
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+        SELECT tp.id_tester, t.tester_name, count(id_test) as count_test
+        FROM test_passage tp
+        JOIN tester t ON t.id_tester = tp.id_tester
+
+        GROUP BY tp.id_tester, t.tester_name
+        """)
+        res = cur.fetchall()
+
+        tester_list = []
+        for r  in res:
+            tester_list.append({
+                "id_tester": r[0],
+                "tester_name": r[1],
+                "count_test": r[2]
+            })
+        
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+        
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(tester_list), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
