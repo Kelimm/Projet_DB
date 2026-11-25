@@ -92,3 +92,29 @@ WHERE c.id_campaign = ts.id_campaign
   AND s.id_stage = sp.id_stage
   AND sp.id_test_passage = tp.id_test_passage
   AND c.id_campaign = %s
+
+
+--question 10
+
+SELECT id_test,
+       test_state,
+       test_passage_at
+FROM test_passage
+WHERE id_test_set IN (SELECT id_test_set
+                      FROM test_set
+                      WHERE id_campaign = %s
+                      AND test_set_type = 'NON_REGRESSION');
+
+
+--question 11
+
+SELECT t.id_test,
+       t.test_name,
+       tp.id_test_passage,
+       tp.test_state,
+       tp.test_passage_at
+FROM Test AS t,
+     Test_passage AS tp
+WHERE t.id_test = tp.id_test
+  AND t.id_test = %s
+
