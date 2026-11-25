@@ -411,6 +411,40 @@ def campaign_test_book(id_c):
         conn.close()
 
 
+@app.route("/campaign/nr/<int:id_c>", methods=['GET'])
+def campaign_non_regression_tests(id_c):
+    """
+    REQUETE QUESTION 10
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+        SELECT id_test,
+            test_state,
+            test_passage_at
+        FROM test_passage
+        WHERE id_test_set IN (SELECT id_test_set
+                      FROM test_set
+                      WHERE id_campaign = %s
+                      AND test_set_type = 'NON_REGRESSION');
+
+            """, (id_c,))
+        
+        test_non_r = cur.fetchall()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"test de non regression": test_non_r}), 200
+
+
+
 @app.route("/test/<int:id_t>", methods=['GET'])
 def all_state_test(id_t):
     """
