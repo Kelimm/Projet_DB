@@ -482,7 +482,7 @@ def all_state_test(id_t):
 
     return jsonify({"Cahier de test de la campagne": test_book}), 200
 
-@app.route("/campaigns/<id_c>/count-tester", methods=['GET'])
+@app.route("/campaigns/<int:id_c>/count-tester", methods=['GET'])
 def campaigns_count_tester(id_c):
     conn = get_db_connection()
     cur = conn.cursor()
