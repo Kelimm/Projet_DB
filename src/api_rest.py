@@ -353,7 +353,7 @@ def count_requirements_with_more_than_3_test():
 
 
     except DatabaseError as e:
-        return jsonify({"error": e}), 500
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cur.close()
@@ -482,6 +482,28 @@ def all_state_test(id_t):
 
     return jsonify({"Cahier de test de la campagne": test_book}), 200
 
+@app.route("/campaigns/<id_c>/count-tester", methods=['GET'])
+def campaigns_count_tester(id_c):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+        SELECT count(DISTINCT tp.id_tester) as count_tester
+        FROM test_passage tp
+        JOIN test_set ts ON ts.id_test_set = tp.id_test_set
+        WHERE ts.id_campaign = %s
+        """, (id_c,))
+        res = cur.fetchone()[0]
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+        
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"count_tester":res}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
