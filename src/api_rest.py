@@ -253,7 +253,7 @@ def requirement_state():
         conn.close()
 
 
-@app.route("/campaign/<int:id_c>/stages-failed", methods=['GET'])
+@app.route("/campaigns/<int:id_c>/stages-failed", methods=['GET'])
 def campaign_failed_stages(id_c):
     """
     REQUETE QUESTION 6
@@ -263,10 +263,11 @@ def campaign_failed_stages(id_c):
 
     try:
         cur.execute("""
-            SELECT sp.id_stage_passage, sp.state_stage, sp.commentary
+            SELECT sp.id_stage_passage, s.stage_name, sp.state_stage, sp.commentary
             FROM stage_passage sp
             JOIN test_passage tp ON sp.id_test_passage = tp.id_test_passage
             JOIN test_set ts ON tp.id_test_set = ts.id_test_set
+            JOIN stage s ON sp.id_stage = s.id_stage
             WHERE ts.id_campaign = %s
             AND sp.state_stage = 'KO';
             """, (id_c,))
@@ -276,8 +277,9 @@ def campaign_failed_stages(id_c):
         for r in res:
             campaign_failed_stages.append({
                 "id_stage_passage": r[0],
-                "state_stage": r[1],
-                "commentary": r[2]
+                "stage_name": r[1],
+                "state_stage": r[2],
+                "commentary": r[3]
             })
 
     except DatabaseError as e:
@@ -351,7 +353,7 @@ def count_requirements_with_more_than_3_test():
 
 
     except DatabaseError as e:
-        return jsonify({"error", e}), 500
+        return jsonify({"error": e}), 500
 
     finally:
         cur.close()
@@ -359,7 +361,7 @@ def count_requirements_with_more_than_3_test():
 
     return jsonify({"Nombre d'exigences couverte par plus de 3 tests": nb_requirement}), 200
 
-@app.route("/campaign/<int:id_c>", methods=['GET'])
+@app.route("/campaigns/<int:id_c>", methods=['GET'])
 def campaign_test_book(id_c):
     """
     REQUETE QUESTION 9 : Afficher le cahier de test associé à une campagne
@@ -376,7 +378,7 @@ def campaign_test_book(id_c):
                    t.id_test,
                    t.test_name,
                    t.test_description,
-                   t.initial_condition,
+                   t.condition_init,
                    tp.id_test_passage,
                    tp.test_state,
                    tp.test_passage_at,

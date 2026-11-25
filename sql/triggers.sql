@@ -103,22 +103,22 @@ CREATE TRIGGER check_stage_belongs_to_test
 EXECUTE FUNCTION check_stage_belongs_to_test();
 
 
-CREATE OR REPLACE FUNCTION delete_test_set_results()
-RETURNS TRIGGER AS $$
-BEGIN
-    DELETE FROM Stage_passage
-    WHERE id_test_passage IN (
-        SELECT id_test_passage FROM Test_passage WHERE id_test_set = OLD.id_test_set
-    );
+-- CREATE OR REPLACE FUNCTION delete_test_set_results()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--     DELETE FROM Stage_passage
+--     WHERE id_test_passage IN (
+--         SELECT id_test_passage FROM Test_passage WHERE id_test_set = OLD.id_test_set
+--     );
 
-    DELETE FROM Test_passage
-    WHERE id_test_set = OLD.id_test_set;
+--     DELETE FROM Test_passage
+--     WHERE id_test_set = OLD.id_test_set;
 
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
+--     RETURN OLD;
+-- END;
+-- $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER delete_test_set_results
-    BEFORE DELETE ON Test_set
-    FOR EACH ROW
-EXECUTE FUNCTION delete_test_set_results();
+-- CREATE TRIGGER delete_test_set_results
+--     BEFORE DELETE ON Test_set
+--     FOR EACH ROW
+-- EXECUTE FUNCTION delete_test_set_results();
