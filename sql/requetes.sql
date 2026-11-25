@@ -126,4 +126,5 @@ WHERE c.id_campaign = ts.id_campaign
 AND ts.id_test_set = tp.id_test_set
 AND tp.id_test = t.id_test 
 AND tp.test_state != 'WAITING'
-AND tp.test_passage_at IS NOT NULL;
+AND tp.test_passage_at IS NOT NULL
+ORDER BY c.id_campaign;
