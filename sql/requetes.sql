@@ -118,3 +118,12 @@ FROM Test AS t,
 WHERE t.id_test = tp.id_test
   AND t.id_test = %s
 
+--question 14
+
+SELECT campaign_name, start_at, end_at, ts.test_set_type, t.id_test, test_state, test_name
+FROM Campaign as c, Test_set as ts, Test_passage as tp, Test as t 
+WHERE c.id_campaign = ts.id_campaign
+AND ts.id_test_set = tp.id_test_set
+AND tp.id_test = t.id_test 
+AND tp.test_state != 'WAITING'
+AND tp.test_passage_at IS NOT NULL;
