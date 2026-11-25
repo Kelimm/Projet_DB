@@ -410,6 +410,40 @@ def campaign_test_book(id_c):
         cur.close()
         conn.close()
 
+
+@app.route("/test/<int:id_t>", methods=['GET'])
+def all_state_test(id_t):
+    """
+    REQUETE QUESTION 11 
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT t.id_test,
+                t.test_name,
+                tp.id_test_passage,
+                tp.test_state,
+                tp.test_passage_at
+            FROM Test AS t,
+                Test_passage AS tp
+            WHERE t.id_test = tp.id_test
+            AND t.id_test = %s
+
+            """, (id_t,))
+        
+        resultat_test = cur.fetchall()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"resultat_test": resultat_test}), 200
+
     return jsonify({"Cahier de test de la campagne": test_book}), 200
 
 
