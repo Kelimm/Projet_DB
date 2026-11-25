@@ -467,7 +467,7 @@ def all_state_test(id_t):
             FROM Test AS t,
                 Test_passage AS tp
             WHERE t.id_test = tp.id_test
-            AND t.id_test = %s
+            AND t.id_test = %s;
 
             """, (id_t,))
         
@@ -497,7 +497,7 @@ def campaigns_count_tester(id_c):
         SELECT count(DISTINCT tp.id_tester) as count_tester
         FROM test_passage tp
         JOIN test_set ts ON ts.id_test_set = tp.id_test_set
-        WHERE ts.id_campaign = %s
+        WHERE ts.id_campaign = %s;
         """, (id_c,))
         res = cur.fetchone()[0]
 
