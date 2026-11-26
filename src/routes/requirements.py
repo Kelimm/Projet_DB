@@ -42,8 +42,6 @@ def create_requirement():
             "requirement_description": new_row[2],
         }
 
-        return jsonify(new_req), 201  # Code HTTP "created"
-
     except DatabaseError as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
@@ -51,6 +49,8 @@ def create_requirement():
     finally:
         cur.close()
         conn.close()
+
+    return jsonify(new_req), 201  # Code HTTP "created"
 
 
 @requirements_bp.route('/requirements', methods=['GET'])
@@ -76,8 +76,6 @@ def get_requirements():
                 "requirement_description": r[2],
             })
 
-        return jsonify(requirements), 200
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -85,6 +83,7 @@ def get_requirements():
         cur.close()
         conn.close()
 
+    return jsonify(requirements), 200
 
 @requirements_bp.route("/requirements/<int:id_r>", methods=['GET'])
 def test_for_requirement(id_r):
@@ -109,8 +108,6 @@ def test_for_requirement(id_r):
                 "test_name": r[1]
             })
 
-        return jsonify(test), 200
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -118,6 +115,7 @@ def test_for_requirement(id_r):
         cur.close()
         conn.close()
 
+    return jsonify(test), 200
 
 @requirements_bp.route("/requirements/tests-count", methods=['GET'])
 def nb_test_requirement():
@@ -145,7 +143,6 @@ def nb_test_requirement():
                 "nb_test": r[2]
             })
 
-        return jsonify(nb_test), 200
 
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
@@ -154,6 +151,7 @@ def nb_test_requirement():
         cur.close()
         conn.close()
 
+    return jsonify(nb_test), 200
 
 @requirements_bp.route("/requirements/passed-tests", methods=['GET'])
 def requirements_passed_test():
@@ -184,8 +182,6 @@ def requirements_passed_test():
                 "test_state": r[4]
             })
 
-        return jsonify(requirements_list), 200
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -193,7 +189,8 @@ def requirements_passed_test():
         cur.close()
         conn.close()
 
-
+    return jsonify(requirements_list), 200
+    
 @requirements_bp.route("/requirements/state", methods=['GET'])
 def requirement_state():
     """
@@ -235,8 +232,6 @@ def requirement_state():
                 "requirement_state": r[2]
             })
 
-        return jsonify(requirements_state), 200
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -244,6 +239,7 @@ def requirement_state():
         cur.close()
         conn.close()
 
+    return jsonify(requirements_state), 200
 
 @requirements_bp.route("/requirements/nb-test-more-than-3", methods=['GET'])
 def count_requirements_with_more_than_3_test():
@@ -266,7 +262,6 @@ def count_requirements_with_more_than_3_test():
         # Récupération de l'élément 0 car fetchone renvoie un tuple
         nb_requirement = cur.fetchone()[0]
 
-
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -275,3 +270,42 @@ def count_requirements_with_more_than_3_test():
         conn.close()
 
     return jsonify({"Nombre d'exigences couverte par plus de 3 tests": nb_requirement}), 200
+
+@requirements_bp.route("/requirements/sorted-by-ok-tests", methods=['GET'])
+def requirements_sorted_by_ok_tests():
+    """
+    QUESTION 16
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+        SELECT r.id_requirement, r.requirement_name, r.requirement_description, COUNT(tp.id_test_passage) AS nb_tests_ok
+        FROM requirement r
+        LEFT JOIN requirement_test rt ON rt.id_requirement = r.id_requirement
+        LEFT JOIN test_passage tp ON tp.id_test = rt.id_test AND tp.test_state = 'OK'
+        GROUP BY r.id_requirement, r.requirement_name, r.requirement_description
+        ORDER BY nb_tests_ok DESC;
+        """)
+        res = cur.fetchall()
+
+        requirements_sorted = []
+
+        for r in res:
+            requirements_sorted.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "requirement_description": r[2],
+                "nb_tests_ok": r[3]
+            })
+    
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(requirements_sorted), 200
+        
