@@ -308,4 +308,37 @@ def requirements_sorted_by_ok_tests():
         conn.close()
 
     return jsonify(requirements_sorted), 200
-        
+
+
+@app.route("/requirements/no-fail", methods=["GET"])
+def never_fail():
+    """
+    REQUETE QUESTION 15 : Exigences n'ayant jamais eu de test en échec ('KO')
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT r.*
+            FROM Requirement AS r
+            WHERE NOT EXISTS (
+                SELECT *
+                FROM Requirement_test AS rt,
+                     Test_passage AS tp
+                WHERE rt.id_requirement = r.id_requirement
+                AND rt.id_test = tp.id_test
+                AND tp.test_state = 'KO'
+            );
+        """)
+
+        no_fail = cur.fetchall()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"no_fail": no_fail}), 200
