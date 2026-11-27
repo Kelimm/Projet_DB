@@ -76,3 +76,33 @@ def all_state_test(id_t):
 
     return jsonify({"Cahier de test de la campagne": test_book}), 200
 
+@app.route("/tests/never-played", methods=["GET"])
+def never_play():
+    """
+    REQUETE QUESTION 17 : Lister les tests qui n'ont jamais été passés
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT t.*
+            FROM Test AS t
+            WHERE NOT EXISTS (
+                SELECT *
+                FROM Test_passage AS tp
+                WHERE tp.id_test = t.id_test
+            );
+        """)
+
+        no_play = cur.fetchall()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"no_play": no_play}), 200
+
