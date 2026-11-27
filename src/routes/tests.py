@@ -76,7 +76,7 @@ def all_state_test(id_t):
 
     return jsonify({"Cahier de test de la campagne": test_book}), 200
 
-@app.route("/tests/never-played", methods=["GET"])
+@tests_bp.route("/tests/never-played", methods=["GET"])
 def never_play():
     """
     REQUETE QUESTION 17 : Lister les tests qui n'ont jamais été passés

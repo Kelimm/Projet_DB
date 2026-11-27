@@ -310,7 +310,7 @@ def requirements_sorted_by_ok_tests():
     return jsonify(requirements_sorted), 200
 
 
-@app.route("/requirements/no-fail", methods=["GET"])
+@requirements_bp.route("/requirements/no-fail", methods=["GET"])
 def never_fail():
     """
     REQUETE QUESTION 15 : Exigences n'ayant jamais eu de test en échec ('KO')
