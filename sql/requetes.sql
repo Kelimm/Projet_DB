@@ -148,3 +148,26 @@ WHERE NOT EXISTS (SELECT *
     		 WHERE rt.id_requirement = r.id_requirement
       		 AND rt.id_test = tp.id_test
 
+
+
+--question17
+
+SELECT *
+FROM Test
+WHERE id_test not in (SELECT id_test
+      	      	      FROM Test_passage);
+
+--question18 deux version pareil 
+
+SELECT *
+FROM Tester
+WHERE id_tester not in (SELECT id_tester
+      		      	FROM Test_passage
+			WHERE test_state = 'KO');
+
+SELECT DISTINCT te.*
+FROM Tester AS te
+LEFT JOIN Test_passage AS tp
+       ON te.id_tester = tp.id_tester
+      AND tp.test_state = 'KO'
+WHERE tp.id_test_passage IS NULL;
