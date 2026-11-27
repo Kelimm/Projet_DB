@@ -128,3 +128,23 @@ AND tp.id_test = t.id_test
 AND tp.test_state != 'WAITING'
 AND tp.test_passage_at IS NOT NULL
 ORDER BY c.id_campaign;
+
+--question15 (deux versions car on demadande que des elemnts d'une table on peut donc faire sous requete et jointure
+
+SELECT *
+FROM Requirement
+WHERE id_requirement not in (SELECT id_requirement
+      		     	    FROM Requirement_test
+			    WHERE id_test in (SELECT id_test
+					      FROM Test_passage
+					      WHERE test_state = 'KO'));
+
+
+SELECT r.*
+FROM Requirement AS r
+WHERE NOT EXISTS (SELECT *
+      	  	 FROM Requirement_test AS rt,
+         	 Test_passage AS tp
+    		 WHERE rt.id_requirement = r.id_requirement
+      		 AND rt.id_test = tp.id_test
+
