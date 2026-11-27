@@ -3,7 +3,7 @@ from routes.requirements import requirements_bp
 from routes.testers import testers_bp
 from routes.tests import tests_bp
 from routes.campaigns import campaigns_bp
-
+from routes.tests_set import tests_set_bp
 
 app = Flask(__name__)
 # Permet d'afficher les données dans l'ordre que l'on souhaite
@@ -13,6 +13,7 @@ app.register_blueprint(requirements_bp)
 app.register_blueprint(testers_bp)
 app.register_blueprint(tests_bp)
 app.register_blueprint(campaigns_bp)
+app.register_blueprint(tests_set_bp)
 
 @app.route('/', methods=['GET'])
 def home():
