@@ -157,7 +157,7 @@ FROM Test
 WHERE id_test not in (SELECT id_test
       	      	      FROM Test_passage);
 
---question18 deux version pareil 
+--question18 deux version pareil bien pour montrer au prof qu'on a bien compris 
 
 SELECT *
 FROM Tester
