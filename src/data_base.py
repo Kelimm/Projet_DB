@@ -34,10 +34,14 @@ def create_tables(): # lancer le code depuis src pour que ça marche
 def create_triggers():
     execute_sql_file("../sql/triggers.sql")
 
+def insert_data():
+    execute_sql_file("../sql/donnee_test.sql")
+
 if __name__ == "__main__":
     try:
         create_tables()
         create_triggers()
+        insert_data()
         print("Connexion réussie et initialisation réussi")
         conn.close()
     except Exception as e:
