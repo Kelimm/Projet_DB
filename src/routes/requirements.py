@@ -342,3 +342,48 @@ def never_fail():
         conn.close()
 
     return jsonify({"no_fail": no_fail}), 200
+
+
+@requirements_bp.route("/requirements/sorted-by-last-test-date", methods=['GET'])
+def sorted_by_last_test_date():
+    """
+    QUESTION 21
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT r.*, MAX(tp.test_passage_at) as last_test_at
+            FROM requirement r
+            JOIN requirement_test rt ON r.id_requirement = rt.id_requirement
+            JOIN test_passage tp ON tp.id_test = rt.id_test
+            WHERE (tp.id_test, tp.test_passage_at) IN (
+            SELECT id_test, MAX(test_passage_at)
+            FROM test_passage
+            GROUP BY id_test
+            ) 
+            GROUP BY r.id_requirement, r.requirement_name, r.requirement_description
+            ORDER BY last_test_at ASC;
+        """)
+
+        res = cur.fetchall()
+
+        list_requirements = []
+
+        for r in res:
+            list_requirements.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "requirement_description": r[2],
+                "last_test_at": r[3]
+            })
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(list_requirements), 200
