@@ -38,7 +38,7 @@ if __name__ == "__main__":
     try:
         create_tables()
         create_triggers()
-        print("Connexion réussie et initialisation réussi)
+        print("Connexion réussie et initialisation réussi")
         conn.close()
     except Exception as e:
         print(f"Erreur connexion : {e}")
