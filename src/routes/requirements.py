@@ -4,6 +4,10 @@ from data_base import get_db_connection
 
 requirements_bp = Blueprint("requirements", __name__)
 
+# --------------------------------------------------------------------------------------------
+# REQUETES CRUD :
+
+# POST (CREATE)
 @requirements_bp.route('/requirements', methods=['POST'])
 def create_requirement():
     """
@@ -52,11 +56,11 @@ def create_requirement():
 
     return jsonify(new_req), 201  # Code HTTP "created"
 
-
+# GET ALL (REQUEST)
 @requirements_bp.route('/requirements', methods=['GET'])
-def get_requirements():
+def get_all_requirements():
     """
-    REQUETE QUESTION 1
+    QUESTION 1
     """
     conn = get_db_connection()
     cur = conn.cursor()
@@ -85,7 +89,132 @@ def get_requirements():
 
     return jsonify(requirements), 200
 
+# GET (by_id)
 @requirements_bp.route("/requirements/<int:id_r>", methods=['GET'])
+def requirement_by_id(id_r):
+    """
+    Renvoie tout pour l'exigence d'id = id_r
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """SELECT * FROM requirement
+            WHERE id_requirement = %s;
+            """, (id_r,)
+        )
+
+        res = cur.fetchone()
+
+        if not res :
+            return jsonify({"error": "Requirement not found"}), 404
+
+        requirement = {
+            "id_requirement": res[0],
+            "requirement_name": res[1],
+            "requirement_description": res[2],
+        }
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(requirement), 200
+
+# UPDATE (PUT)
+@requirements_bp.route('/requirements/<int:id_r>', methods=['PUT'])
+def update_requirement(id_r):
+    """
+    UPDATE (PUT) pour la table requirement
+    """
+    data = request.get_json()
+
+    if not data or "requirement_name" not in data or "requirement_description" not in data:
+        return jsonify({
+            "ERROR": "Missing data"
+        }), 400
+
+    req_name = data.get("requirement_name")
+    req_desc = data.get("requirement_description")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """
+            UPDATE requirement
+                SET requirement_name = %s, requirement_description = %s
+                WHERE id_requirement = %s
+            -- RETURNING permet de renvoyer la requete sans ça fetchone() ne récupère rien
+            RETURNING id_requirement, requirement_name, requirement_description;
+            """,
+            (req_name, req_desc, id_r)
+        )
+
+        updated_row = cur.fetchone()
+        
+        if not updated_row:
+            return jsonify({"error": "Requirement not found"}), 404    
+        
+        conn.commit()
+
+        updated_req = {
+            "id_requirement": updated_row[0],
+            "requirement_name": updated_row[1],
+            "requirement_description": updated_row[2],
+        }
+
+    except DatabaseError as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(updated_req), 200 
+
+# DELETE
+@requirements_bp.route("/requirements/<int:id_r>", methods=["DELETE"])
+def delete_requirement(id_r):
+    """
+    DELETE
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """DELETE FROM requirement
+            WHERE id_requirement = %s
+            RETURNING id_requirement;
+            """, (id_r,)
+        )
+
+        deleted_row = cur.fetchone()
+
+        if not deleted_row :
+            return jsonify({"error": "Requirement not found"}), 404
+
+        conn.commit()
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"message": f"Requirement {id_r} deleted successfully"}), 200
+
+# --------------------------------------------------------------------------------------------
+
+@requirements_bp.route("/requirements/<int:id_r>/tests", methods=['GET'])
 def test_for_requirement(id_r):
     """
     REQUETE QUESTION 2
@@ -332,7 +461,15 @@ def never_fail():
             );
         """)
 
-        no_fail = cur.fetchall()
+        res = cur.fetchall()
+        no_fail = []
+
+        for r in res:
+            no_fail.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "requirement_description": r[2]
+            })
 
     except DatabaseError as e:
         return jsonify({"error": str(e)}), 500
