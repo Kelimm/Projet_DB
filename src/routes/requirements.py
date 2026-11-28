@@ -387,3 +387,58 @@ def sorted_by_last_test_date():
         conn.close()
 
     return jsonify(list_requirements), 200
+
+
+@requirements_bp.route("/requirements/summary", methods=["GET"])
+def requirement_summary():
+    """
+    REQUETE QUESTION 22 
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+SELECT r.id_requirement,
+       r.requirement_name,
+       COUNT(DISTINCT rt.id_test) AS nb_test_total, --distincte si un test est passé plusieurs fois
+       CASE
+           WHEN COUNT(CASE WHEN tp.test_state = 'KO' THEN 1 END) > 0 THEN 'KO' -- des qqu'un test est ko on STOP
+           WHEN COUNT(tp.id_test_passage) = 0 THEN 'Non testée' -- grace a la jointure gauche on a aussi les non teste
+           ELSE 'OK'
+       END AS etat_exigence,
+       COUNT(DISTINCT CASE WHEN tp.test_state = 'KO' THEN tp.id_test END) AS nb_tests_ko, --condition ici afin de ne pas supprimer pour les autres resultat avec un where
+       -- RANK() et OVER trouvés sur internet car on ne connaissait pas : permet de classer les exigences selon leur nombre de tests KO croissant sans écraser les lignes du GROUP BY
+       RANK() OVER (
+           ORDER BY COUNT(DISTINCT CASE WHEN tp.test_state = 'KO' THEN tp.id_test END) ASC -- pareil que pour conter le nombre de test KO au dessus
+       ) AS rang
+FROM Requirement AS r
+JOIN Requirement_test AS rt
+  ON r.id_requirement = rt.id_requirement
+LEFT JOIN Test_passage AS tp --LEFT join afin de garder aussi les exigences dont les tests ne sont pas encore réalisé
+       ON rt.id_test = tp.id_test
+GROUP BY r.id_requirement, r.requirement_name
+ORDER BY rang ASC; --tri final pour afficher les lignes dans l'ordre du classement
+        """)
+
+        res = cur.fetchall()
+
+        synthese = []
+        for r in res:
+            synthese.append({
+                "id_requirement": r[0],
+                "requirement_name": r[1],
+                "nb_test_total": r[2],
+                "etat_exigence": r[3],
+                "nb_tests_ko": r[4],
+                "rang": r[5]
+            })
+
+    except DatabaseError as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify(synthese), 200
